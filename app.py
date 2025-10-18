@@ -1,3 +1,33 @@
+import sys, subprocess, importlib
+
+# pin versions that work on Streamlit Cloud
+REQUIRED = [
+    ("opencv-python-headless==4.9.0.80", "cv2"),
+    ("numpy==1.26.4", "numpy"),
+    ("pandas==2.2.2", "pandas"),
+    ("matplotlib==3.8.4", "matplotlib"),
+    ("streamlit==1.36.0", "streamlit"),
+]
+
+def _ensure_deps():
+    missing = []
+    for pip_spec, mod_name in REQUIRED:
+        try:
+            importlib.import_module(mod_name)
+        except ImportError:
+            missing.append(pip_spec)
+    if missing:
+        # install quietly; first run may take ~1–2 min
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "--no-warn-script-location",
+             "--disable-pip-version-check", "--quiet", *missing]
+        )
+        # import after install to populate globals (so later code can use them)
+        for pip_spec, mod_name in REQUIRED:
+            globals()[mod_name] = importlib.import_module(mod_name)
+
+_ensure_deps()
+
 import os, io, math, tempfile, time
 from pathlib import Path
 
@@ -344,3 +374,4 @@ with tab2:
             if ok:
                 st.image(buf.tobytes(), caption="Annotated image", use_column_width=True)
                 st.download_button("⬇️ Download annotated image", buf.tobytes(), file_name="annotated_true_waist.png", mime="image/png")
+
